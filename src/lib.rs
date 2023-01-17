@@ -134,7 +134,7 @@ pub mod matching {
         thread_name.to_string()
     }
 
-    fn match_regex(v: &Vec<Regex>, line: &str) -> Result<(isize, String), String> {
+    fn match_regex(v: &[Regex], line: &str) -> Result<(isize, String), String> {
         let mut m: isize = -1;
         let mut mask = "0".repeat(line.len());
         for (i, re) in v.iter().enumerate() {
@@ -147,11 +147,8 @@ pub mod matching {
             m = i as isize;
             let caps = re.captures(line).unwrap();
             for i in 1..caps.len() {
-                match caps.get(i) {
-                    Some(mat) => {
-                        mask.replace_range(mat.range(), "1".repeat(mat.end() - mat.start()).as_str());
-                    }
-                    None => {}
+                if let Some(mat) = caps.get(i) {
+                    mask.replace_range(mat.range(), "1".repeat(mat.end() - mat.start()).as_str());
                 }
             }
         }
@@ -178,7 +175,7 @@ pub mod loading {
         };
         let buf_reader = BufReader::new(file);
         for (i, l) in buf_reader.lines().enumerate() {
-            let re = Regex::new(format!("^{}$", l.expect("Unable to read line").as_str()).as_str()).expect(format!("Unable to compile regex at {}", i).as_str());
+            let re = Regex::new(format!("^{}$", l.expect("Unable to read line").as_str()).as_str()).unwrap_or_else(|_| panic!("Unable to compile regex at {}", i));
             v.push(re);
         }
         v
@@ -187,9 +184,8 @@ pub mod loading {
     pub fn load_loglines(dir: String) -> impl Iterator<Item=String> {
         WalkDir::new(dir).into_iter()
             .filter_map(|result| { result.ok() })
-            .filter(|entry| { is_log(&entry) })
-            .map(|entry| buf_reader(entry))
-            .flatten()
+            .filter(is_log)
+            .flat_map(buf_reader)
             .filter_map(|result| { result.ok() })
     }
 
@@ -197,8 +193,8 @@ pub mod loading {
         match name.borrow() {
             "hadoop" => |line: String| {
                 if line.len() > 29 {
-                    let begin = line.find("]")? + 1;
-                    let idx = line[begin..].find(":")? + 1;
+                    let begin = line.find(']')? + 1;
+                    let idx = line[begin..].find(':')? + 1;
                     Some(line[(begin + idx)..].trim().to_string())
                 } else {
                     None
@@ -209,7 +205,7 @@ pub mod loading {
             },
             "ssh" => |line: String| {
                 if line.len() > 29 {
-                    let begin = line.find("]")?;
+                    let begin = line.find(']')?;
                     Some(line[(begin + 3)..].trim().to_string())
                 } else {
                     None
@@ -217,7 +213,7 @@ pub mod loading {
             },
             "linux" => |line: String| {
                 if line.len() > 23 {
-                    let begin = line[23..].find(":")? + 2;
+                    let begin = line[23..].find(':')? + 2;
                     let msg = line[23 + begin..].trim();
                     if !msg.is_empty() {
                         Some(msg.to_string())
@@ -230,7 +226,7 @@ pub mod loading {
             },
             "openstack" => |line: String| {
                 if line.len() > 29 {
-                    let begin = line.find("]")?;
+                    let begin = line.find(']')?;
                     Some(line[(begin + 2)..].trim().to_string())
                 } else {
                     None
@@ -256,7 +252,7 @@ pub mod loading {
     }
 
     fn buf_reader(entry: DirEntry) -> Lines<BufReader<File>> {
-        let f = File::open(entry.path().to_path_buf()).expect("Unable to open file");
+        let f = File::open(entry.path()).expect("Unable to open file");
         BufReader::new(f).lines()
     }
 
