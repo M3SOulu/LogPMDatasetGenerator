@@ -266,6 +266,19 @@ pub mod loading {
             "zookeeper" => |line: String| {
                 Some(line.splitn(3, " - ").last()?.to_string())
             },
+            "hpc" => |line: String| {
+                let t= line.trim().splitn(7, ' ').last()?;
+                if t.len() > 2 {
+                    let first_char = t.chars().next().unwrap();
+                    if first_char == '0' || first_char == '1' {
+                        Some(t[2..].to_string())
+                    } else {
+                        Some(t.to_string())
+                    }
+                } else {
+                    None
+                }
+            },
             _ => { panic!("Unsupported dataset!") }
         }
     }
