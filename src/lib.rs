@@ -263,6 +263,9 @@ pub mod loading {
                     None
                 }
             },
+            "zookeeper" => |line: String| {
+                Some(line.splitn(3, " - ").last()?.to_string())
+            },
             _ => { panic!("Unsupported dataset!") }
         }
     }
