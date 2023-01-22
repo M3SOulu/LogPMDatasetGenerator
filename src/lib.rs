@@ -247,6 +247,22 @@ pub mod loading {
                     Some(msg.trim().to_string())
                 }
             },
+            "apache" => |line: String| {
+                // let msg = line[28..]
+                //     .splitn(2, ']')
+                //     .last()?;
+                let v: Vec<&str> = line[28..].splitn(2, ']').collect();
+                if v.len() == 2 {
+                    let msg = v[1].trim();
+                    if msg.is_empty() {
+                        None
+                    } else {
+                        Some(msg.trim().to_string())
+                    }
+                } else {
+                    None
+                }
+            },
             _ => { panic!("Unsupported dataset!") }
         }
     }
