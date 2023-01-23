@@ -264,7 +264,7 @@ pub mod loading {
                 }
             },
             "zookeeper" => |line: String| {
-                Some(line.splitn(3, " - ").last()?.to_string())
+                Some(line.splitn(3, " - ").last()?.trim().to_string())
             },
             "hpc" => |line: String| {
                 let t= line.trim().splitn(7, ' ').last()?;
